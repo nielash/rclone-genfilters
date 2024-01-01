@@ -598,6 +598,7 @@ func outputFile(filename, rulesString string) {
 	header += "# see https://rclone.org/filtering/#filter-from-read-filtering-patterns-from-a-file\n\n"
 	header += fmt.Sprintf("# rclone bisync remote1:path1 remote2:path2 --create-empty-src-dirs --compare size,modtime,checksum --slow-hash-sync-only --resilient -MvP --drive-skip-gdocs --fix-case --resync --dry-run --filters-file %s\n", strconv.Quote(outputfile))
 	header += "# see https://rclone.org/bisync/#filtering\n"
+	header += fmt.Sprintf("\n# To generate:\n# rclone genfilters %s -o %s\n", strconv.Quote(fsPath), strconv.Quote(outputfile))
 	header += "\n# REMINDERS:\n# Do not leave any trailing whitespace after paths! (leading whitespace is fine)\n# order matters!\n"
 
 	_, err = fmt.Fprintf(file, "%s\n%s", header, rulesString)
