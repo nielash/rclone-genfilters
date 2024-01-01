@@ -5,6 +5,7 @@
 package genfilters
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -28,6 +30,7 @@ import (
 )
 
 var (
+	inputfile      = ""
 	outputfile     = ""
 	fsPath         = ""
 	noOpen         bool
@@ -46,6 +49,7 @@ var (
 	showRegex      = false
 	showCmdLine    = false
 	debug          = false
+	importOnce     sync.Once
 )
 
 type filtermode uint8
@@ -59,6 +63,7 @@ func init() {
 	cmd.Root.AddCommand(commandDefinition)
 	cmdFlags := commandDefinition.Flags()
 	flags.StringVarP(cmdFlags, &outputfile, "output-file", "o", "", "Write results to a file at this path, for use as a --filter-from file. (default: {currentdirectory}/rclone_genfilters.txt)", "")
+	flags.StringVarP(cmdFlags, &inputfile, "input-file", "", "", "Load filters from this existing file on startup.", "")
 	flags.BoolVarP(cmdFlags, &noOpen, "no-open", "", noOpen, "Do not automatically open the file when completed.", "")
 	flags.BoolVarP(cmdFlags, &showRegex, "regex", "", showRegex, "Also show output as regex, in --dump filters format", "")
 	flags.BoolVarP(cmdFlags, &showCmdLine, "cmd", "", showCmdLine, "Also show filters in command line syntax, to add the filters directly via the --filter flag instead of with a --filter-from file", "")
@@ -106,7 +111,7 @@ Example usage of output file:
 		fsPath = args[0]
 		fsrc := cmd.NewFsSrc(args)
 		cmd.Run(false, false, command, func() error {
-			return GenFilters(context.Background(), fsrc, outputfile)
+			return GenFilters(context.Background(), fsrc, inputfile, outputfile)
 		})
 	},
 }
@@ -261,7 +266,7 @@ func getRule(s string) string {
 }
 
 // GenFilters is the main entry point. It shows a navigable tree view of the current directory and generates filters.
-func GenFilters(ctx context.Context, f fs.Fs, outfile string) error {
+func GenFilters(ctx context.Context, f fs.Fs, infile, outfile string) error {
 	// checks and warnings
 	origFilters := filter.GetConfig(ctx)
 	if !origFilters.InActive() {
@@ -270,6 +275,7 @@ func GenFilters(ctx context.Context, f fs.Fs, outfile string) error {
 
 	filt, _ = filter.NewFilter(nil)
 	outputfile = outfile
+	inputfile = infile
 	setDefaults()
 	rootDir := "."
 	root := tview.NewTreeNode(rootDir).SetColor(tcell.ColorGreen)
@@ -320,6 +326,18 @@ func GenFilters(ctx context.Context, f fs.Fs, outfile string) error {
 
 	// Add the current directory to the root node.
 	add(root, rootDir)
+
+	// if an input file was supplied, parse and import it
+	if inputfile != "" {
+		var err error
+		importOnce.Do(func() {
+			err = forEachLine(inputfile, false, importRule)
+			refresh()
+		})
+		if err != nil {
+			return fmt.Errorf("error parsing input file: %v", err)
+		}
+	}
 
 	// If a directory was selected, open it.
 	// note that tview is not using "selected" the way we are. tview means "expanded".
@@ -444,7 +462,7 @@ func GenFilters(ctx context.Context, f fs.Fs, outfile string) error {
 		}
 	} else {
 		startover = false
-		_ = GenFilters(ctx, f, outputfile)
+		_ = GenFilters(ctx, f, inputfile, outputfile)
 	}
 	return nil
 }
@@ -583,6 +601,108 @@ func outputFile(filename, rulesString string) {
 		if !noOpen {
 			_ = open.Start(filename)
 		}
+	}
+}
+
+// forEachLine calls fn on every line in the file pointed to by path
+//
+// It ignores empty lines and lines starting with '#' or ';' if raw is false
+func forEachLine(path string, raw bool, fn func(string) error) (err error) {
+	var scanner *bufio.Scanner
+	if path == "-" {
+		scanner = bufio.NewScanner(os.Stdin)
+	} else {
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		scanner = bufio.NewScanner(in)
+		defer fs.CheckClose(in, &err)
+	}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !raw {
+			line = strings.TrimSpace(line)
+			if len(line) == 0 || line[0] == '#' || line[0] == ';' {
+				continue
+			}
+		}
+		err := fn(line)
+		if err != nil {
+			return err
+		}
+	}
+	return scanner.Err()
+}
+
+// AddRule adds a filter rule with include/exclude indicated by the prefix
+//
+// These are
+//
+//	# Comment
+//	+ glob
+//	- glob
+//	!
+//
+// '+' includes the glob, '-' excludes it and '!' resets the filter list
+//
+// Line comments may be introduced with '#' or ';'
+func importRule(rule string) error {
+	switch {
+	case rule == "!":
+		for k := range selected {
+			delete(selected, k)
+		}
+		refresh()
+		return nil
+	case strings.HasPrefix(rule, "- "):
+		if mode == includeOthers {
+			importSelected(clean(rule))
+		} else {
+			importUnselected(clean(rule))
+		}
+	case strings.HasPrefix(rule, "+ "):
+		if mode == includeOthers {
+			importUnselected(clean(rule))
+		} else {
+			importSelected(clean(rule))
+		}
+	default:
+		return fmt.Errorf("malformed rule %q", rule)
+	}
+	return nil
+}
+
+func clean(name string) string {
+	name = strings.TrimPrefix(name, "- ")
+	name = strings.TrimPrefix(name, "+ ")
+	name = strings.TrimPrefix(name, "/")
+	name = strings.TrimSuffix(name, "**")
+	name = strings.TrimSuffix(name, "*")
+	return name
+}
+
+// note that we deal in strings only here because nodes may not actually exist yet
+// (if the input file includes files/folders more than 1 level deep)
+func importSelected(name string) {
+	// name is assumed to already have trailing slash if necessary
+	delete(selected, name)
+	refresh()
+	// check if rule is redundant before adding
+	if filt.IncludeRemote(name) == defaultInclude {
+		selected[name] = !defaultInclude
+	}
+	refresh()
+}
+
+func importUnselected(name string) {
+	// name is assumed to already have trailing slash if necessary
+	delete(selected, name)
+	refresh()
+	// check if we need an explicit rule
+	if filt.IncludeRemote(name) != defaultInclude {
+		selected[name] = defaultInclude
+		refresh()
 	}
 }
 
