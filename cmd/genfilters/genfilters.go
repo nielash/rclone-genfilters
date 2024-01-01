@@ -310,6 +310,12 @@ func GenFilters(ctx context.Context, f fs.Fs, infile, outfile string) error {
 			fs.Logf(nil, "%v", err)
 		}
 		refresh()
+		sort.Slice(files, func(i, j int) bool {
+			return strings.ToLower(files[i].Remote()) < strings.ToLower(files[j].Remote())
+		})
+		sort.Slice(dirs, func(i, j int) bool {
+			return strings.ToLower(dirs[i].Remote()) < strings.ToLower(dirs[j].Remote())
+		})
 		for _, dir := range dirs {
 			node := tview.NewTreeNode("🖿 " + withSlash(dir)).SetReference(dir).SetSelectable(true)
 			processNew(node)
@@ -476,7 +482,7 @@ func parse() ([]string, map[string]string) {
 	}
 	// reverse sort
 	sort.SliceStable(keys, func(i, j int) bool {
-		return keys[i] > keys[j]
+		return strings.ToLower(keys[i]) > strings.ToLower(keys[j])
 	})
 
 	root := "+ /*"
