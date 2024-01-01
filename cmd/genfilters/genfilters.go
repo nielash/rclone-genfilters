@@ -16,12 +16,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/rclone/rclone/cmd"
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/flags"
 	"github.com/rclone/rclone/fs/filter"
+	"github.com/rclone/rclone/fs/fspath"
 	"github.com/rclone/rclone/fs/walk"
 	"github.com/rivo/tview"
 	"github.com/rivo/uniseg"
@@ -128,6 +130,8 @@ func helpText() (tr []string) {
 		" d toggle debug mode (shows more info)",
 		" r toggle showing the rules to the right of the tree",
 		" c clear selections and start over",
+		" y copy current relative path to clipboard (if supported)",
+		" Y copy current absolute path to clipboard (if supported)",
 		" q/ESC/^c to quit and output final results",
 	}
 	return
@@ -423,6 +427,14 @@ func GenFilters(ctx context.Context, f fs.Fs, infile, outfile string) error {
 			case 'i':
 				mode = includeOthers
 				startOver(tree)
+			case 'y':
+				if !clipboard.Unsupported {
+					_ = clipboard.WriteAll(nodeString(tree.GetCurrentNode()))
+				}
+			case 'Y':
+				if !clipboard.Unsupported {
+					_ = clipboard.WriteAll(fspath.JoinRootPath(fsPath, nodeString(tree.GetCurrentNode())))
+				}
 			}
 		}
 		return event
