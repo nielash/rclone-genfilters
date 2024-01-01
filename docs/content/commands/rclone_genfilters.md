@@ -43,6 +43,8 @@ You can interact with the user interface using key presses. The supported keys a
      d toggle debug mode (shows more info)
      r toggle showing the rules to the right of the tree
      c clear selections and start over
+     y copy current relative path to clipboard (if supported)
+     Y copy current absolute path to clipboard (if supported)
      q/ESC/^c to quit and output final results
 
 See flags for more options.
@@ -61,8 +63,9 @@ rclone genfilters remote:path [flags]
 ```
       --cmd                  Also show filters in command line syntax, to add the filters directly via the --filter flag instead of with a --filter-from file
   -h, --help                 help for genfilters
+      --input-file string    Load filters from this existing file on startup.
       --no-open              Do not automatically open the file when completed.
-  -o, --output-file string   Write results to a file at this path, for use as a --filter-from file. (default: {cachedir}/rclone_genfilters.txt)
+  -o, --output-file string   Write results to a file at this path, for use as a --filter-from file. (default: {currentdirectory}/rclone_genfilters.txt)
       --regex                Also show output as regex, in --dump filters format
 ```
 
