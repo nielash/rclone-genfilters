@@ -18,7 +18,6 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/rclone/rclone/cmd"
 	"github.com/rclone/rclone/fs"
-	"github.com/rclone/rclone/fs/config"
 	"github.com/rclone/rclone/fs/config/flags"
 	"github.com/rclone/rclone/fs/filter"
 	"github.com/rclone/rclone/fs/walk"
@@ -59,7 +58,7 @@ const (
 func init() {
 	cmd.Root.AddCommand(commandDefinition)
 	cmdFlags := commandDefinition.Flags()
-	flags.StringVarP(cmdFlags, &outputfile, "output-file", "o", "", "Write results to a file at this path, for use as a --filter-from file. (default: {cachedir}/rclone_genfilters.txt)", "")
+	flags.StringVarP(cmdFlags, &outputfile, "output-file", "o", "", "Write results to a file at this path, for use as a --filter-from file. (default: {currentdirectory}/rclone_genfilters.txt)", "")
 	flags.BoolVarP(cmdFlags, &noOpen, "no-open", "", noOpen, "Do not automatically open the file when completed.", "")
 	flags.BoolVarP(cmdFlags, &showRegex, "regex", "", showRegex, "Also show output as regex, in --dump filters format", "")
 	flags.BoolVarP(cmdFlags, &showCmdLine, "cmd", "", showCmdLine, "Also show filters in command line syntax, to add the filters directly via the --filter flag instead of with a --filter-from file", "")
@@ -137,7 +136,7 @@ func setDefaults() {
 		defaultInclude = false // selected = included
 	}
 	if outputfile == "" {
-		outputfile = filepath.Join(config.GetCacheDir(), "rclone_genfilters.txt")
+		outputfile = filepath.Join(".", "rclone_genfilters.txt")
 	}
 }
 
