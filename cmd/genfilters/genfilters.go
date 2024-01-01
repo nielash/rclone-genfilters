@@ -430,6 +430,8 @@ func GenFilters(ctx context.Context, f fs.Fs, infile, outfile string) error {
 
 	// handles the box on the left which shows the resulting rules in realtime
 	tree.Box.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		half := width / 2
+
 		// draw text
 		style := tcell.StyleDefault.Reverse(false)
 		toPrint := rules
@@ -440,10 +442,10 @@ func GenFilters(ctx context.Context, f fs.Fs, infile, outfile string) error {
 			toPrint = append(toPrint, rulesCmdLine...)
 		}
 		for i, s := range toPrint {
-			line(x, y+i, 30, style, ' ', s, screen)
+			line(x, y+i, half-5, style, ' ', s, screen)
 			style = tcell.StyleDefault.Reverse(false)
 		}
-		return x + 35, y, width - 30, height
+		return x + half, y, width - (half + 5), height
 	})
 
 	// create the app and run it
