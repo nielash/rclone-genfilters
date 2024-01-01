@@ -881,6 +881,7 @@ rclone [flags]
 * [rclone delete](/commands/rclone_delete/)	 - Remove the files in path.
 * [rclone deletefile](/commands/rclone_deletefile/)	 - Remove a single file from remote.
 * [rclone gendocs](/commands/rclone_gendocs/)	 - Output markdown docs for rclone to the directory supplied.
+* [rclone genfilters](/commands/rclone_genfilters/)	 - Generate filters automatically with a terminal-based user interface.
 * [rclone hashsum](/commands/rclone_hashsum/)	 - Produces a hashsum file for all the objects in the path.
 * [rclone link](/commands/rclone_link/)	 - Generate public link to file/folder.
 * [rclone listremotes](/commands/rclone_listremotes/)	 - List all the remotes in the config file and defined in environment variables.
