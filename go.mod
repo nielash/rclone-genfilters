@@ -55,6 +55,7 @@ require (
 	github.com/prometheus/client_golang v1.17.0
 	github.com/putdotio/go-putio/putio v0.0.0-20200123120452-16d982cac2b8
 	github.com/rfjakob/eme v1.1.2
+	github.com/rivo/tview v0.0.0-20231206124440-5f078138442e
 	github.com/rivo/uniseg v0.4.4
 	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/sirupsen/logrus v1.9.3
@@ -155,7 +156,6 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rasky/go-xdr v0.0.0-20170124162913-1a41d1a06c93 // indirect
 	github.com/relvacode/iso8601 v1.3.0 // indirect
-	github.com/rivo/tview v0.0.0-20231206124440-5f078138442e // indirect
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46 // indirect
